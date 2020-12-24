@@ -19,14 +19,18 @@ from pathlib import Path
 import numpy as np
 import torch
 from crank.net.trainer.dataset import convert_f0, create_one_hot
-from crank.utils import feat2hdf5, mlfb2wavf, to_device, to_numpy, world2wav
+from crank.utils import feat2hdf5, mlfb2wavf, lsp2wavf, to_device, to_numpy, world2wav
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
 
 def TrainerWrapper(trainer_type, **ka):
-    from crank.net.trainer import (CycleGANTrainer, LSGANTrainer,
-                                   StarGANTrainer, VQVAETrainer)
+    from crank.net.trainer import (
+        CycleGANTrainer,
+        LSGANTrainer,
+        StarGANTrainer,
+        VQVAETrainer,
+    )
 
     if trainer_type == "vqvae":
         trainer = VQVAETrainer(**ka)
@@ -266,7 +270,6 @@ class BaseTrainer(object):
                 cond = torch.cat([cond, energy], dim=-1)
             else:
                 cond = energy
-            print(cond.size())
         if not self.conf["use_spkr_embedding"]:
             if cond is not None:
                 return torch.cat([cond, h_onehot], dim=-1), None
@@ -342,8 +345,10 @@ class BaseTrainer(object):
             self._save_decoded_to_hdf5(feats)
         if self.conf["output_feat_type"] == "mcep":
             self._save_decoded_world(feats)
-        else:
+        elif self.conf["output_feat_type"] == "mlfb":
             self._save_decoded_mlfb(feats)
+        elif self.conf["output_feat_type"] == "lsp":
+            self._save_decoded_lsp(feats)
 
     def _store_features(self, batch, outputs, cv_spkr_name, tdir):
         def inv_trans(k, feat):
@@ -411,6 +416,21 @@ class BaseTrainer(object):
                     hop_size=self.feat_conf["hop_size"],
                     fmin=self.feat_conf["fmin"],
                     fmax=self.feat_conf["fmax"],
+                    plot=True,
+                )
+                for wavf in feats.keys()
+            ]
+        )
+
+    def _save_decoded_lsp(self, feats):
+        Parallel(n_jobs=self.n_jobs)(
+            [
+                delayed(lsp2wavf)(
+                    feats[wavf]["feats"],
+                    wavf,
+                    fs=self.feat_conf["fs"],
+                    fftl=self.feat_conf["fftl"],
+                    hop_size=self.feat_conf["hop_size"],
                     plot=True,
                 )
                 for wavf in feats.keys()

@@ -17,7 +17,7 @@ feature:
 # general setting
 input_feat_type: mlfb    # input feature type ['mlfb', 'mcep']
 output_feat_type: mlfb   # output feature type ['mlfb', 'mcep', 'excit']
-trainer_type: vqvae      # trainer type ['vqvae', 'lsgan', 'cyclegan', 'stargan']
+trainer_type: stargan    # trainer type ['vqvae', 'lsgan', 'cyclegan', 'stargan']
 input_size: 80           # input_size of G network ['mlfb_dim', 'mcep_dim+1']
 output_size: 80          # output_size of G network ['mlfb_dim', 'mcep_dim+1']
 n_steps: 200000          # # of training steps
@@ -104,7 +104,7 @@ n_steps_cycle_start: 50000     # # steps when starts cycle-consistency training
 n_cycles: 1                    # # cycles of cyclic architecture
 
 # for D
-n_steps_gan_start: 100000      # # of steps to start adv training
+n_steps_gan_start: 50000       # # of steps to start adv training
 gan_type: lsgan                # type of GAN ['lsgan']
 n_discriminator_layers: 8      # # of discriminator layers
 discriminator_kernel_size: 5   # kernel_size for discriminator
