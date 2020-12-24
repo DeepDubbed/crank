@@ -12,6 +12,7 @@ Extract features such as mlfb and mcep.
 """
 
 import logging
+import librosa
 from pathlib import Path
 
 import numpy as np
@@ -126,21 +127,27 @@ class Feature(object):
         x, fs = sf.read(str(wavf))
         for win_type in self.windows.keys():
             if win_type == "hann":
-                feat_name = "mlfb"
+                mlfb_name = "mlfb"
+                lsp_name = "lsp"
             else:
-                feat_name = f"mlfb_{win_type}"
-            self.feats[feat_name] = logmelfilterbank(
-                x,
-                self.conf["fs"],
-                hop_size=self.conf["hop_size"],
-                fft_size=self.conf["fftl"],
-                win_length=self.conf["fftl"],
-                window=self.windows[win_type],
-                num_mels=self.conf["mlfb_dim"],
-                fmin=self.conf["fmin"],
-                fmax=self.conf["fmax"],
-                eps=EPS,
-            )
+                mlfb_name = f"mlfb_{win_type}"
+                lsp_name = f"mlfb_{win_type}"
+            x_stft = librosa.stft(x, 
+                                  n_fft=self.conf["fftl"], 
+                                  hop_length=self.conf["hop_size"],
+                                  win_length=self.conf["fftl"], 
+                                  window=self.windows[win_type], 
+                                  pad_mode="reflect")
+            spc = np.abs(x_stft).T  
+            fmin = 0 if self.conf["fmin"] is None else self.conf["fmin"]
+            fmax = fs // 2 if self.conf["fmax"] is None else self.conf["fmax"]
+            mel_basis = librosa.filters.mel(fs, self.conf["fftl"], 
+                                            self.conf["mlfb_dim"], fmin, fmax)
+            self.feats[mlfb_name] = np.log10(np.maximum(EPS, np.dot(spc, mel_basis.T)))
+
+            if win_type == "hann":
+                self.feats["lsp"] = 10 * np.log10(spc + EPS)
+                self.feats["energy"] = np.sum(np.clip(spc ** 2, EPS, 1 / EPS), axis=1) 
 
     def _mlfb2wavf(self, flbl):
         for win_type in self.conf["window_types"]:

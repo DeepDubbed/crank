@@ -38,6 +38,8 @@ class BaseDataset(Dataset):
         self.features += ["lcf0", "uv"]
         if "mcep" in self.features:
             self.features += ["cap"]
+        if self.conf["decoder_energy"]:
+            self.features += ["energy"]
         self.features = set(self.features)
         self.spkrdict = dict(zip(self.spkrlist, range(len(self.spkrlist))))
         self.n_spkrs = len(self.spkrdict)

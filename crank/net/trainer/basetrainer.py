@@ -257,17 +257,24 @@ class BaseTrainer(object):
     def _get_dec_h(self, batch, use_cvfeats=False, cv_spkr_name=None):
         h, h_onehot = self._get_spkr_conditions(batch, cv_spkr_name, use_cvfeats)
         if self.conf["decoder_f0"]:
-            f0 = self._get_f0_condition(batch, cv_spkr_name, use_cvfeats)
+            cond = self._get_f0_condition(batch, cv_spkr_name, use_cvfeats)
         else:
-            f0 = None
+            cond = None
+        if self.conf["decoder_energy"]:
+            energy = batch["energy"]
+            if h is not None:
+                cond = torch.cat([cond, energy], dim=-1)
+            else:
+                cond = energy
+            print(cond.size())
         if not self.conf["use_spkr_embedding"]:
-            if f0 is not None:
-                return torch.cat([f0, h_onehot], dim=-1), None
+            if cond is not None:
+                return torch.cat([cond, h_onehot], dim=-1), None
             else:
                 return h_onehot, None
         else:
-            if f0 is not None:
-                return f0, h
+            if cond is not None:
+                return cond, h
             else:
                 return None, h
 

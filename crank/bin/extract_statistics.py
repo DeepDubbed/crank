@@ -58,10 +58,11 @@ def main():
     scaler = {}
 
     # speaker independent scaler extraction
-    feats = ["mlfb", "mcep", "lcf0"]
+    feats = ["mlfb", "mcep", "lcf0", "lsp", "energy"]
     for win_type in conf["feature"]["window_types"]:
         if win_type != "hann":
             feats += [f"mlfb_{win_type}"]
+            feats += [f"lsp_{win_type}"]
 
     for ext in feats:
         s = Scaler()
@@ -70,16 +71,20 @@ def main():
         scaler[ext] = s.ss
 
     # speaker dependent statistics extraction
-    for spkr in scp["spkrs"]:
-        file_lists_sd = [scp["feats"][uid] for uid in scp["spk2utt"][spkr]]
-        s = Scaler()
-        s.fit(file_lists_sd, ext="lcf0")
-        logging.info(
-            "# of samples {} of {}: {} samples".format(
-                "lcf0", spkr, s.ss.n_samples_seen_
+    sd_feats = ["lcf0", "energy"]
+    for ext in sd_feats:
+        for spkr in scp["spkrs"]:
+            file_lists_sd = [scp["feats"][uid] for uid in scp["spk2utt"][spkr]]
+            s = Scaler()
+            s.fit(file_lists_sd, ext=ext)
+            logging.info(
+                "# of samples {} of {}: {} samples".format(
+                    ext, spkr, s.ss.n_samples_seen_
+                )
             )
-        )
-        scaler[spkr] = {"lcf0": s.ss}
+            if spkr not in scaler.keys():
+                scaler[spkr] = {}
+            scaler[spkr][ext] = s.ss
 
     pklf = featdir / "scaler.pkl"
     joblib.dump(scaler, str(pklf))
