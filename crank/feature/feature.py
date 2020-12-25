@@ -12,14 +12,13 @@ Extract features such as mlfb and mcep.
 """
 
 import logging
-import librosa
 from pathlib import Path
 
+import librosa
 import numpy as np
 import scipy.signal as sp
 import soundfile as sf
 from crank.utils import convert_continuos_f0, low_cut_filter, mlfb2wavf
-from parallel_wavegan.bin.preprocess import logmelfilterbank
 from sprocket.speech import FeatureExtractor, Synthesizer
 from sprocket.util import HDF5
 
@@ -148,6 +147,7 @@ class Feature(object):
 
             if win_type == "hann":
                 self.feats["lsp"] = 10 * np.log10(spc + EPS)
+                self.feats["sp"] = spc
                 # self.feats["energy"] = np.sqrt(
                 #     np.clip(np.sum(spc ** 2, axis=1), EPS, 1 / EPS)
                 # )
