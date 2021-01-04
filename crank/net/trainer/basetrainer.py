@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from crank.net.trainer.dataset import convert_f0, create_one_hot
-from crank.utils import feat2hdf5, mlfb2wavf, lsp2wavf, to_device, to_numpy, world2wav
+from crank.utils import feat2hdf5, mlfb2wavf, spc2wavf, to_device, to_numpy, world2wav
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
@@ -347,8 +347,8 @@ class BaseTrainer(object):
             self._save_decoded_world(feats)
         elif self.conf["output_feat_type"] == "mlfb":
             self._save_decoded_mlfb(feats)
-        elif self.conf["output_feat_type"] == "lsp":
-            self._save_decoded_lsp(feats)
+        elif self.conf["output_feat_type"] in ["lsp", "sp"]:
+            self._save_decoded_spc(feats, spc_type=self.conf["output_feat_type"])
 
     def _store_features(self, batch, outputs, cv_spkr_name, tdir):
         def inv_trans(k, feat):
@@ -422,16 +422,17 @@ class BaseTrainer(object):
             ]
         )
 
-    def _save_decoded_lsp(self, feats):
+    def _save_decoded_spc(self, feats, spc_type="lsp"):
         Parallel(n_jobs=self.n_jobs)(
             [
-                delayed(lsp2wavf)(
+                delayed(spc2wavf)(
                     feats[wavf]["feats"],
                     wavf,
                     fs=self.feat_conf["fs"],
                     fftl=self.feat_conf["fftl"],
                     hop_size=self.feat_conf["hop_size"],
                     plot=True,
+                    spc_type=spc_type,
                 )
                 for wavf in feats.keys()
             ]

@@ -112,19 +112,22 @@ def mlfb2wavf(
         plot_mlfb(mlfb, wavf)
 
 
-def lsp2wavf(
-    lsp, wavf, fs=22050, fftl=1024, hop_size=220, plot=False,
+def spc2wavf(
+    spc, wavf, fs=22050, fftl=1024, hop_size=220, plot=False, spc_type="lsp",
 ):
     Path(wavf).parent.mkdir(parents=True, exist_ok=True)
     try:
-        spc = 10 ** (lsp / 10)
+        if spc_type == "lsp":
+            spc = 10 ** (spc / 10)
+        elif spc_type == "sp":
+            spc = spc
         wav = griffin_lim(spc, fftl, hop_size, fftl, window="hann", n_iters=100)
         sf.write(str(wavf), wav, fs)
     except librosa.util.exceptions.ParameterError:
         logging.info("ERROR: GliffinLim for {}".format(str(wavf)))
 
     if plot:
-        plot_mlfb(lsp, wavf)
+        plot_mlfb(spc, wavf)
 
 
 def feat2hdf5(mlfb, hdf5, ext="feats"):
