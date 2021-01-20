@@ -22,11 +22,7 @@ from torch.utils.data import Dataset
 
 class BaseDataset(Dataset):
     def __init__(
-        self,
-        conf,
-        scp,
-        scaler,
-        phase="train",
+        self, conf, scp, scaler, phase="train",
     ):
         self.conf = conf
         self.h5list = list(scp[phase]["feats"].values())
@@ -39,7 +35,7 @@ class BaseDataset(Dataset):
         if "mcep" in self.features:
             self.features += ["cap"]
         if self.conf["decoder_energy"]:
-            self.features += ["energy"]
+            self.features += ["cenergy", "energy_uv"]
         self.features = set(self.features)
         self.spkrdict = dict(zip(self.spkrlist, range(len(self.spkrlist))))
         self.n_spkrs = len(self.spkrdict)
@@ -95,6 +91,14 @@ class BaseDataset(Dataset):
             sample["lcf0"],
             sample["org_spkr_name"],
             sample["cv_spkr_name"],
+            ext="lcf0",
+        )
+        sample["cv_cenergy"] = convert_f0(
+            self.scaler,
+            sample["cenergy"],
+            sample["org_spkr_name"],
+            sample["cv_spkr_name"],
+            ext="cenergy",
         )
 
         return sample
@@ -133,7 +137,10 @@ class BaseDataset(Dataset):
 
     def _transform(self, sample):
         for k in self.features:
-            if k not in ["uv", "cap"] and k not in self.conf["ignore_scaler"]:
+            if (
+                k not in ["uv", "cap", "energy_uv"]
+                and k not in self.conf["ignore_scaler"]
+            ):
                 sample[k] = self.scaler[k].transform(sample[k])
         return sample
 
@@ -231,7 +238,7 @@ def calculate_maxflen(flist):
     return max_flen
 
 
-def convert_f0(scaler, lcf0, org_spkr_name, cv_spkr_name):
-    return (lcf0 - scaler[org_spkr_name]["lcf0"].mean_) / np.sqrt(
-        scaler[org_spkr_name]["lcf0"].var_
-    ) * np.sqrt(scaler[cv_spkr_name]["lcf0"].var_) + scaler[cv_spkr_name]["lcf0"].mean_
+def convert_f0(scaler, lcf0, org_spkr_name, cv_spkr_name, ext="lcf0"):
+    return (lcf0 - scaler[org_spkr_name][ext].mean_) / np.sqrt(
+        scaler[org_spkr_name][ext].var_
+    ) * np.sqrt(scaler[cv_spkr_name][ext].var_) + scaler[cv_spkr_name][ext].mean_

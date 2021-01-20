@@ -58,7 +58,7 @@ def main():
     scaler = {}
 
     # speaker independent scaler extraction
-    feats = ["mlfb", "mcep", "lcf0", "lsp", "energy", "sp"]
+    feats = ["mlfb", "mcep", "lcf0", "cenergy"]
     for win_type in conf["feature"]["window_types"]:
         if win_type != "hann":
             feats += [f"mlfb_{win_type}"]
@@ -71,7 +71,7 @@ def main():
         scaler[ext] = s.ss
 
     # speaker dependent statistics extraction
-    sd_feats = ["lcf0", "energy"]
+    sd_feats = ["lcf0", "cenergy"]
     for ext in sd_feats:
         for spkr in scp["spkrs"]:
             file_lists_sd = [scp["feats"][uid] for uid in scp["spk2utt"][spkr]]

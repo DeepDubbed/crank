@@ -151,7 +151,10 @@ class Feature(object):
                 self.feats["energy"] = np.log(
                     np.sqrt(np.clip(np.sum(spc ** 2, axis=1), EPS, 1 / EPS))
                 )
-                self.feats["energy_uv"] = self.feats["npow"] > self.sconf["npow"]
+                self.feats["energy_uv"] = np.zeros_like(self.feats["energy"])
+                self.feats["energy_uv"][: len(self.feats["npow"])] += (
+                    self.feats["npow"] > self.sconf["npow"]
+                )
                 _, self.feats["cenergy"] = convert_continuos_f0(
                     self.feats["energy"] * self.feats["energy_uv"]
                 )

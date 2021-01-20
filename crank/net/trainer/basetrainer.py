@@ -79,7 +79,7 @@ class BaseTrainer(object):
 
         self.spkrs = dataloader["spkrs"]
         self.n_spkrs = len(self.spkrs)
-        self.n_cv_spkrs = 4 if self.n_spkrs > 4 else self.n_cv_spkrs
+        self.n_cv_spkrs = 4 if self.n_spkrs > 4 else self.n_spkrs
         self.n_dev_samples = 5
 
         self.resume_steps = resume
@@ -252,6 +252,8 @@ class BaseTrainer(object):
             self.finish_train = True
 
     def _get_enc_h(self, batch, use_cvfeats=False, cv_spkr_name=None):
+        if self.conf["encoder_energy"]:
+            raise NotImplementedError("Encoder encoder_energy did not supported.")
         if self.conf["encoder_f0"]:
             f0 = self._get_f0_condition(batch, cv_spkr_name, use_cvfeats)
             return f0
@@ -260,16 +262,15 @@ class BaseTrainer(object):
 
     def _get_dec_h(self, batch, use_cvfeats=False, cv_spkr_name=None):
         h, h_onehot = self._get_spkr_conditions(batch, cv_spkr_name, use_cvfeats)
-        if self.conf["decoder_f0"]:
-            cond = self._get_f0_condition(batch, cv_spkr_name, use_cvfeats)
-        else:
-            cond = None
+        cond = (
+            self._get_f0_condition(batch, cv_spkr_name, use_cvfeats)
+            if self.conf["decoder_f0"]
+            else None
+        )
         if self.conf["decoder_energy"]:
-            energy = batch["energy"]
-            if h is not None:
-                cond = torch.cat([cond, energy], dim=-1)
-            else:
-                cond = energy
+            cenergy = batch["cv_cenergy"] if use_cvfeats else batch["cenergy"]
+            cenergy = torch.cat([cenergy, batch["energy_uv"]], axis=-1)
+            cond = torch.cat([cond, cenergy], dim=-1) if h is not None else cenergy
         if not self.conf["use_spkr_embedding"]:
             if cond is not None:
                 return torch.cat([cond, h_onehot], dim=-1), None

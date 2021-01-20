@@ -155,13 +155,14 @@ class VQVAE2(nn.Module):
             if n == 0:
                 enc_in_channels = self.conf["input_size"]
                 enc_out_channels = self.conf["emb_dim"][n]
-                enc_aux_channels = 2 if self.conf["encoder_f0"] else 0
+                enc_aux_channels += 2 if self.conf["encoder_f0"] else 0
+                enc_aux_channels += 2 if self.conf["encoder_energy"] else 0
                 dec_in_channels = sum(
                     [self.conf["emb_dim"][i] for i in range(self.conf["n_vq_stacks"])]
                 )
                 dec_out_channels = self.conf["output_size"]
                 dec_aux_channels += 2 if self.conf["decoder_f0"] else 0
-                dec_aux_channels += 1 if self.conf["decoder_energy"] else 0
+                dec_aux_channels += 2 if self.conf["decoder_energy"] else 0
                 if self.conf["use_spkr_embedding"]:
                     dec_aux_channels += self.conf["spkr_embedding_size"]
                 else:
