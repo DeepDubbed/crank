@@ -41,15 +41,15 @@ class Feature(object):
         if not h5f.exists():
             logging.info("extract: {}".format(wavf))
 
-            # analyze mlfb
-            self._analyze_mlfb(wavf)
-            if synth_flag:
-                self._mlfb2wavf(flbl)
-
             # analyze world features, cf0, uv, then synthesize
             self._analyze_world_features(x)
             if synth_flag and self.conf["fftl"] != 256:
                 self._synthesize_world_features(flbl)
+
+            # analyze mlfb
+            self._analyze_mlfb(wavf)
+            if synth_flag:
+                self._mlfb2wavf(flbl)
 
             # save as hdf5
             self._save_hdf5(h5f)
@@ -86,13 +86,13 @@ class Feature(object):
         self.feats["lcf0"] = np.log(self.feats["cf0"])
         if f0_only:
             return
+        self.feats["mcep"] = feat.mcep(
+            dim=self.conf["mcep_dim"], alpha=self.conf["mcep_alpha"]
+        )
+        self.feats["npow"] = feat.npow()
 
+        # NOTE: 256 fft_size sometimes causes errors for codeap extraction
         if self.conf["fftl"] != 256 and self.conf["fs"] > 16000:
-            # NOTE: 256 fft_size sometimes causes errors
-            self.feats["mcep"] = feat.mcep(
-                dim=self.conf["mcep_dim"], alpha=self.conf["mcep_alpha"]
-            )
-            self.feats["npow"] = feat.npow()
             self.feats["cap"] = feat.codeap()
             cap = self.feats["cap"]
             self.feats["ccap"] = np.zeros(cap.shape)
@@ -146,12 +146,15 @@ class Feature(object):
             self.feats[mlfb_name] = np.log10(np.maximum(EPS, np.dot(spc, mel_basis.T)))
 
             if win_type == "hann":
-                self.feats["lsp"] = 10 * np.log10(spc + EPS)
-                self.feats["sp"] = spc
-                # self.feats["energy"] = np.sqrt(
-                #     np.clip(np.sum(spc ** 2, axis=1), EPS, 1 / EPS)
-                # )
-                self.feats["energy"] = np.mean(10 * np.log10(spc + EPS), axis=1)
+                # self.feats["lsp"] = 10 * np.log10(spc + EPS)
+                # self.feats["sp"] = spc
+                self.feats["energy"] = np.log(
+                    np.sqrt(np.clip(np.sum(spc ** 2, axis=1), EPS, 1 / EPS))
+                )
+                self.feats["energy_uv"] = self.feats["npow"] > self.sconf["npow"]
+                _, self.feats["cenergy"] = convert_continuos_f0(
+                    self.feats["energy"] * self.feats["energy_uv"]
+                )
 
     def _mlfb2wavf(self, flbl):
         for win_type in self.conf["window_types"]:

@@ -40,6 +40,7 @@ def test_feature_8k():
             "fmin": 80,
             "fmax": 3800,
             "hop_size": 80,
+            "shiftms": 10,
             "mlfb_dim": 80,
         }
     )
