@@ -253,7 +253,7 @@ class BaseTrainer(object):
 
     def _get_enc_h(self, batch, use_cvfeats=False, cv_spkr_name=None):
         if self.conf["encoder_energy"]:
-            raise NotImplementedError("Encoder encoder_energy did not supported.")
+            raise NotImplementedError("encoder_energy did not supported.")
         if self.conf["encoder_f0"]:
             f0 = self._get_f0_condition(batch, cv_spkr_name, use_cvfeats)
             return f0
@@ -270,7 +270,7 @@ class BaseTrainer(object):
         if self.conf["decoder_energy"]:
             cenergy = batch["cv_cenergy"] if use_cvfeats else batch["cenergy"]
             cenergy = torch.cat([cenergy, batch["energy_uv"]], axis=-1)
-            cond = torch.cat([cond, cenergy], dim=-1) if h is not None else cenergy
+            cond = torch.cat([cond, cenergy], dim=-1) if cond is not None else cenergy
         if not self.conf["use_spkr_embedding"]:
             if cond is not None:
                 return torch.cat([cond, h_onehot], dim=-1), None
